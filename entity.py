@@ -1,9 +1,16 @@
 from pydantic import BaseModel
+from enum import Enum
 
+
+class RiskClass(str, Enum):
+    SAFE = "SAFE"
+    RISKY = "RISKY"
+    HIGH = "HIGH"
 
 class PredictResponse(BaseModel):
     result: bool
     message: str
+    riskClass: RiskClass
 
 class Diabetes(BaseModel):
     Pregnancies: float

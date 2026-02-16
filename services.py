@@ -1,7 +1,7 @@
 import os
 import pickle
 from entity import Diabetes, Heart, Parkinsons
-
+import pandas as pd
 
     
 # getting the working directory of the main.py
@@ -38,25 +38,27 @@ def predict_diabetes(input_data : Diabetes):
 
 
 
-# Heart Disease Prediction Page
+
+
+# Load model & columns once at startup
+heart_disease_model = pickle.load(open("saved_models/heart_disease_model.sav", "rb"))
+heart_feature_columns = pickle.load(open("saved_models/heart_columns.pkl", "rb"))
+
 def predict_heart(input_data: Heart):
 
-    # code for Prediction
-    heart_diagnosis = ''
+    data_dict = input_data.dict()
 
-    user_input = [input_data.age, input_data.sex, input_data.cp, input_data.trestbps, input_data.chol, input_data.fbs, input_data.restecg,
-                    input_data.thalach, input_data.exang, input_data.oldpeak, input_data.slope, input_data.ca, input_data.thal]
+    df = pd.DataFrame([data_dict])
 
-    user_input = [float(x) for x in user_input]
+    # Ensure correct column order
+    df = df[heart_feature_columns]
 
-    heart_prediction = heart_disease_model.predict([user_input])
+    proba = heart_disease_model.predict_proba(df)[0][1]
 
-    if heart_prediction[0] == 1:
-        heart_diagnosis = True
-    else:
-        heart_diagnosis = False
+    print("Probability:", proba)
 
-    return heart_diagnosis
+    return proba > 0.65
+
 
 
 

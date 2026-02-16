@@ -5,9 +5,12 @@ from sklearn.model_selection import train_test_split
 from sklearn import svm
 from sklearn.metrics import accuracy_score
 import pickle
+import os
 
+current_dir = os.path.dirname(__file__)
+file_path = os.path.join(current_dir, "dataset", "diabetes.csv")
 # Data Collection and Analysis
-diabetes_dataset = pd.read_csv('/content/diabetes.csv')
+diabetes_dataset = pd.read_csv(file_path)
 
 diabetes_dataset.head()
 diabetes_dataset.shape
@@ -56,12 +59,23 @@ if prediction[0] == 0:
 else:
     print('The person is diabetic')
 
-# Saving the trained model
-filename = 'diabetes_model.sav'
-pickle.dump(classifier, open(filename, 'wb'))
 
-# Loading the saved model
-loaded_model = pickle.load(open('diabetes_model.sav', 'rb'))
+# Create path relative to this script
+current_dir = os.path.dirname(__file__)
+model_dir = os.path.join(current_dir, "..", "saved_models")
+
+# Ensure folder exists
+os.makedirs(model_dir, exist_ok=True)
+
+# Full model path
+model_path = os.path.join(model_dir, "diabetes_model.sav")
+
+# Save model
+pickle.dump(classifier, open(model_path, 'wb'))
+
+# Load model
+loaded_model = pickle.load(open(model_path, 'rb'))
+
 
 input_data = (5,166,72,19,175,25.8,0.587,51)
 

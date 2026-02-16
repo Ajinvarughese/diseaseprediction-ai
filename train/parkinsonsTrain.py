@@ -5,9 +5,13 @@ from sklearn.model_selection import train_test_split
 from sklearn import svm
 from sklearn.metrics import accuracy_score
 import pickle
+import os
+
+current_dir = os.path.dirname(__file__)
+file_path = os.path.join(current_dir, "dataset", "parkinsons.csv")
 
 # Data Collection & Analysis
-parkinsons_data = pd.read_csv('/content/parkinsons.csv')
+parkinsons_data = pd.read_csv(file_path)
 
 parkinsons_data.head()
 
@@ -21,7 +25,7 @@ parkinsons_data.describe()
 
 parkinsons_data['status'].value_counts()
 
-parkinsons_data.groupby('status').mean()
+parkinsons_data.groupby('status').mean(numeric_only=True)
 
 # Data Pre-Processing
 X = parkinsons_data.drop(columns=['name','status'], axis=1)
@@ -70,12 +74,23 @@ if prediction[0] == 0:
 else:
     print("The Person has Parkinsons")
 
-# Saving the trained model
-filename = 'parkinsons_model.sav'
-pickle.dump(model, open(filename, 'wb'))
 
-# Loading the saved model
-loaded_model = pickle.load(open('parkinsons_model.sav', 'rb'))
+# Create path relative to this script
+current_dir = os.path.dirname(__file__)
+model_dir = os.path.join(current_dir, "..", "saved_models")
+
+# Ensure folder exists
+os.makedirs(model_dir, exist_ok=True)
+
+# Full model path
+model_path = os.path.join(model_dir, "parkinsons_model.sav")
+
+# Save model
+pickle.dump(model, open(model_path, 'wb'))
+
+# Load model
+loaded_model = pickle.load(open(model_path, 'rb'))
+
 
 for column in X.columns:
     print(column)

@@ -37,6 +37,19 @@ Rules:
 - Include a brief recommendation to consult a qualified healthcare professional when appropriate.
 """
 
+SYSTEM_PROMPT_FOR_CLASSIFICATION = """
+You are a medical risk classification engine.
+
+Classify whether the patient's heart disease, diabetes, or Parkinsons Disease based on the given informations.
+
+Rules:
+- Output ONLY one word.
+- Valid outputs are: SAFE, RISKY, HIGH.
+- Do NOT explain.
+- Do NOT include punctuation or extra text.
+
+"""
+
 # ================== CLIENT (cached) ==================
 
 _client = None
@@ -152,3 +165,33 @@ def aiRecommendation(
     )
 
     return safe_message_content(completion.choices[0].message.content)
+
+def classifyRiskClass(prediction: bool, desc: str, disease: Literal["HEART", "DIABETES", "PARKINSONS"]) -> RiskClass:
+    client = get_client()
+    condition_text = (
+        f"This person have {disease}" if prediction  else f"This person does not have {disease}"
+    )
+
+    messages = [
+        {"role": "system", "content": SYSTEM_PROMPT_FOR_CLASSIFICATION},
+        {
+            "role": "user",
+            "content": f"""
+            Prediction: {condition_text}
+            AI recommendation message: {desc}
+
+            Now predict classification: 
+            Must say SAFE or RISKY or HIGH
+            """
+        }
+    ]
+   
+    completion = client.chat.completions.create(
+        model="openai/gpt-oss-20b",
+        messages=messages,
+        temperature=0,
+        max_tokens=500
+    )
+
+    return safe_message_content(completion.choices[0].message.content)
+   
