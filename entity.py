@@ -11,6 +11,7 @@ class PredictResponse(BaseModel):
     result: bool
     message: str
     riskClass: RiskClass
+    confidence: float
 
 class Diabetes(BaseModel):
     Pregnancies: float

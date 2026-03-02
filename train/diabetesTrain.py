@@ -33,7 +33,7 @@ X_train, X_test, Y_train, Y_test = train_test_split(
 print(X.shape, X_train.shape, X_test.shape)
 
 # Training the Model
-classifier = svm.SVC(kernel='linear')
+classifier = svm.SVC(kernel='linear', probability=True)
 classifier.fit(X_train, Y_train)
 
 # Model Evaluation
