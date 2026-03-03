@@ -1,7 +1,8 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException, Query
+from fastapi import FastAPI, UploadFile, File, HTTPException, Query, Form
 from services import *
 from entity import *
 from chatAI import *
+import json
 
 app = FastAPI()
 
@@ -83,8 +84,38 @@ async def extractPdf(
     pdf_bytes = await file.read()
 
     try:
-        statements = extract_values_from_pdf(pdf_bytes, disease)
+        if(disease == "diabetes"):
+            statements = extract_values_from_pdf_diabetes(pdf_bytes)
+        else:    
+            statements = extract_values_from_pdf(pdf_bytes, disease)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
     return statements
+
+
+@app.post("/ai/chat")
+async def chat(
+    user_input: str = Form(...),
+    user: str = Form(...),
+    chat_log: str = Form("[]"),
+    patient_report: UploadFile | None = File(None),
+):
+    extracted_patient_report = ""
+    try:
+        user_data = json.loads(user)
+        chat_log_data = json.loads(chat_log)
+        print(patient_report)
+        if patient_report:
+            pdf_bytes = await patient_report.read()
+            extracted_patient_report = extract_pdf_of_chat(pdf_bytes)
+            print(extracted_patient_report)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    return askAI(
+        patient_report=extracted_patient_report,
+        user_input=user_input,
+        chat_log=chat_log_data,
+        user=user_data,
+    )

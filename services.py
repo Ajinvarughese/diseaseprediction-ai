@@ -52,7 +52,6 @@ def predict_diabetes(input_data : Diabetes):
 
 
 # Load model & columns once at startup
-heart_disease_model = pickle.load(open("saved_models/heart_disease_model.sav", "rb"))
 heart_feature_columns = pickle.load(open("saved_models/heart_columns.pkl", "rb"))
 
 def predict_heart(input_data: Heart):
@@ -107,6 +106,40 @@ def extract_values_from_pdf(pdf_bytes, disease_type):
         EXPECTED_KEYS = EXPECTED_KEYS_PARKINSON
     else:
         raise ValueError("Invalid disease type")
+
+    extracted_data = {}
+
+    with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
+        for page in pdf.pages:
+            text = page.extract_text()
+
+            if not text:
+                continue
+
+            lines = text.split("\n")
+
+            for line in lines:
+                line_lower = line.lower()
+
+                for key_phrase, clean_key in EXPECTED_KEYS.items():
+
+                    if re.search(rf"\b{re.escape(key_phrase)}\b", line_lower):
+
+                        value = re.findall(r"[-+]?\d*\.\d+|\d+", line)
+
+                        if value:
+                            clean_key = EXPECTED_KEYS[key_phrase]
+                            extracted_data[clean_key] = float(value[-1])
+
+    for key in EXPECTED_KEYS.values():
+        extracted_data.setdefault(key, None)
+
+    return extracted_data
+
+
+def extract_values_from_pdf_diabetes(pdf_bytes):
+
+    EXPECTED_KEYS = EXPECTED_KEYS_DIABETES
 
     extracted_data = {}
 

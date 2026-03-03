@@ -36,6 +36,7 @@ EXPECTED_KEYS_DIABETES = {
     "diabetes pedigree function": "DiabetesPedigreeFunction",
     "pedigree": "DiabetesPedigreeFunction",
     "family history": "DiabetesPedigreeFunction",
+    "diabetesPedigreeFunction": "DiabetesPedigreeFunction",
 
     # Age
     "age": "Age",
@@ -132,6 +133,7 @@ EXPECTED_KEYS_PARKINSON = {
     "jitter abs": "Jitter_Abs",
     "absolute jitter": "Jitter_Abs",
     "jitter_abs": "Jitter_Abs",
+    "Jitter_Abs": "Jitter_Abs",
 
     "rap": "RAP",
     "relative average perturbation": "RAP",
@@ -149,10 +151,16 @@ EXPECTED_KEYS_PARKINSON = {
     "shimmer_db": "Shimmer_dB",
 
     "apq3": "APQ3",
+    "APQ3": "APQ3",
+
     "apq5": "APQ5",
+    "APQ5": "APQ5",
+
     "apq": "APQ",
+    "APQ": "APQ",
 
     "dda": "DDA",
+    "DDA": "DDA",
 
     # Noise Measures
     "nhr": "NHR",

@@ -3,20 +3,47 @@ from dotenv import load_dotenv
 from openai import OpenAI
 from entity import *
 from typing import Union, Literal
+import pdfplumber
+import io
 # ================== SYSTEM PROMPTS ==================
 
 SYSTEM_PROMPT = """
-You are a friendly finance assistant.
+You are a friendly medical assistant chatbot.
 
-Reply like WhatsApp messages:
-- short and clear
-- human tone
-- use a few emojis 🙂
+Your role is to help patients understand symptoms, medical information, and health concerns in a supportive and clear way.
 
-You mainly help with finance-related questions (money, savings, loans, budgeting, investing).
+Communication style:
+- Reply like WhatsApp messages.
+- Keep responses short, clear, and easy to understand.
+- Use a warm, human tone.
+- You may use a few appropriate emojis 🙂 when speaking casually.
+- Avoid medical jargon unless necessary and explain it simply.
 
-If the user asks something completely unrelated to finance,
-politely reply that you are here to help with financial issues only.
+Responsibilities:
+- Answer questions about symptoms even if no medical report is provided.
+- Suggest possible common causes for symptoms when appropriate.
+- Provide general health guidance and self-care suggestions.
+- Ask helpful follow-up questions when more information is needed.
+- If a medical report or lab result is provided, explain it clearly.
+
+Medical reports:
+- If a medical report or lab result is provided, analyze and explain it clearly.
+- Highlight values that may be unusual.
+- Explain what those values generally mean.
+
+If no medical report is provided:
+- Do NOT insist on a report.
+- Provide general guidance based on the symptoms described.
+- Optionally suggest that lab tests or reports could help provide more accurate insight.
+
+Safety rules:
+- Never provide a definitive medical diagnosis.
+- Do not prescribe medications or treatments.
+- If symptoms appear serious or urgent, advise the user to seek medical attention.
+- Always remind users that the information is not a substitute for professional medical advice.
+
+If the user asks something unrelated to health or medicine,
+politely say you can only help with health-related questions.
 """
 
 
@@ -72,52 +99,72 @@ def get_client():
 def clean_text(text) -> str:
     if not text or not isinstance(text, str):
         return ""
-    return text.replace("\u0000", "").strip()
 
+    text = text.replace("\u0000", "")
+    text = text.replace("final", "", 1)  # remove first occurrence
 
-def build_messages(user_input, chat_log, asset, liability, user):
+    return text.strip()
+
+def build_messages(patient_report, user_input, chat_log, user):
     messages = [{"role": "system", "content": SYSTEM_PROMPT}]
     messages.extend(chat_log)
 
-    messages.append({"role": "system", "content": f"User name: {user}"})
-    messages.append({"role": "system", "content": f"Assets: {asset}"})
-    messages.append({"role": "system", "content": f"Liabilities: {liability}"})
-    messages.append({"role": "user", "content": user_input})
-
+    messages.append({
+        "role": "system",
+        "content": f"Patient details:\n{user}"
+    })
+   
+    if patient_report : 
+        messages.append({
+            "role": "system", 
+            "content": f"Patient report:\n{patient_report}"
+        })
+    
+    messages.append({
+        "role": "user", 
+        "content": user_input
+    })
     return messages
 
 # ================== AI CHAT ==================
 
-# def askAI(
-#     user_input: str,
-#     chat_log: list = [],
-#     asset: list = [],
-#     liability: list = [],
-#     user: str = ""
-# ) -> str:
-#     client = get_client()
-#     messages = build_messages(user_input, chat_log, asset, liability, user)
+def askAI(
+    patient_report: str,
+    user_input: str,
+    chat_log: list | None = None,
+    user: list | None = None,
+) -> str:
 
-#     completion = client.chat.completions.create(
-#         model="openai/gpt-oss-20b",
-#         messages=messages,
-#         temperature=1,
-#         max_tokens=4096,
-#         stream=True
-#     )
+    if chat_log is None:
+        chat_log = []
 
-#     response_chunks = []
+    if user is None:
+        user = []
 
-#     for chunk in completion:
-#         if chunk.choices and chunk.choices[0].delta.content:
-#             response_chunks.append(chunk.choices[0].delta.content)
+    client = get_client()
+    messages = build_messages(patient_report, user_input, chat_log, user)
+    
 
-#     response_text = clean_text("".join(response_chunks))
+    completion = client.chat.completions.create(
+        model="openai/gpt-oss-20b",
+        messages=messages,
+        temperature=1,
+        max_tokens=4096,
+        stream=True
+    )
 
-#     chat_log.append({"role": "user", "content": clean_text(user_input)})
-#     chat_log.append({"role": "assistant", "content": response_text})
+    response_chunks = []
 
-#     return response_text
+    for chunk in completion:
+        if chunk.choices and chunk.choices[0].delta.content:
+            response_chunks.append(chunk.choices[0].delta.content)
+
+    response_text = clean_text("".join(response_chunks))
+
+    chat_log.append({"role": "user", "content": clean_text(user_input)})
+    chat_log.append({"role": "assistant", "content": response_text})
+
+    return response_text
 
 # ================== RISK CLASSIFICATION ==================
 
@@ -192,6 +239,21 @@ def classifyRiskClass(prediction: bool, desc: str, disease: Literal["HEART", "DI
         temperature=0,
         max_tokens=500
     )
-
+    print(completion.choices[0].message.content)
     return safe_message_content(completion.choices[0].message.content)
    
+def extract_pdf_of_chat(pdf_bytes) -> str:
+    try:
+        text = ""
+
+        with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
+            for page in pdf.pages:
+                page_text = page.extract_text()
+                if page_text:
+                    text += page_text + "\n"
+
+        return clean_text(text)
+
+    except Exception as e:
+        print("PDF extraction error:", e)
+        return ""
